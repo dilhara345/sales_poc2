@@ -11,7 +11,7 @@ steps:
         bq query --use_legacy_sql=false < sql/dim_order.sql
 
   # Step 2: Trigger the Data Fusion pipeline via its REST API
-  # (fetches the correct API endpoint automatically instead of guessing it)
+  # (uses 'gcloud beta data-fusion' since the command lives in the beta track)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'trigger-data-fusion-pipeline'
     entrypoint: bash
@@ -20,7 +20,7 @@ steps:
       - |
         ACCESS_TOKEN=$$(gcloud auth print-access-token)
 
-        API_ENDPOINT=$$(gcloud data-fusion instances describe test-pipeline \
+        API_ENDPOINT=$$(gcloud beta data-fusion instances describe test-pipeline \
           --location=us-central1 \
           --format="value(apiEndpoint)")
 
