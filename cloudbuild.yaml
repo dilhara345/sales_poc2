@@ -1,0 +1,31 @@
+steps:
+  # Step 1-4: Run SQL to populate dim/fact tables via BigQuery CLI
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'run-sql-transforms'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        bq query --use_legacy_sql=false < sql/dim_customer.sql
+        bq query --use_legacy_sql=false < sql/dim_product.sql
+        bq query --use_legacy_sql=false < sql/dim_order.sql
+
+  # Step 5: Trigger the Data Fusion pipeline via REST API
+  # (this depends on dim_customer, dim_product, dim_order all existing already,
+  #  which is why this step runs AFTER the SQL step above)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'trigger-data-fusion-pipeline'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        ACCESS_TOKEN=$$(gcloud auth print-access-token)
+        DATAFUSION_ENDPOINT="https://test-pipeline-pipeline-test-1-507003-dot-usc1.datafusion.googleusercontent.com"
+
+        curl -X POST \
+          -H "Authorization: Bearer $${ACCESS_TOKEN}" \
+          -H "Content-Type: application/json" \
+          "$${DATAFUSION_ENDPOINT}/v3/namespaces/default/apps/fact_sales_pipeline/workflows/DataPipelineWorkflow/start"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
